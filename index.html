@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chaotic Timer</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+
+            background: #111;
+            color: #ff3333;
+
+            font-family: monospace;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .timer-container {
+            text-align: center;
+        }
+
+        #timer {
+            font-size: clamp(60px, 15vw, 150px);
+            font-weight: bold;
+            letter-spacing: 2px;
+
+            color: #ff3333;
+
+            text-shadow:
+                0 0 10px red,
+                0 0 20px red,
+                0 0 40px #880000;
+        }
+
+        #restart {
+            margin-top: 30px;
+
+            padding: 10px 22px;
+
+            background: #111;
+            color: #ff3333;
+
+            border: 1px solid #ff3333;
+            border-radius: 6px;
+
+            font-family: monospace;
+            font-size: 16px;
+
+            cursor: pointer;
+        }
+
+        #restart:hover {
+            background: #211;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="timer-container">
+        <div id="timer">20:00</div>
+        <button id="restart">Restart</button>
+    </div>
+
+    <script>
+        const timerElement = document.getElementById("timer");
+        const restartButton = document.getElementById("restart");
+
+        const TARGET = 20 * 60; // 20 minutes
+        const MAX_TIME = 99 * 60 + 59;
+
+        let seconds;
+        let direction;
+        let tickDelay;
+
+        let tickTimeout;
+        let modeTimeout;
+
+        let running = true;
+
+
+        function displayTime() {
+            const mins = Math.floor(seconds / 60)
+                .toString()
+                .padStart(2, "0");
+
+            const secs = (seconds % 60)
+                .toString()
+                .padStart(2, "0");
+
+            timerElement.textContent = `${mins}:${secs}`;
+        }
+
+
+        /*
+            Pick a new behavior every 5-10 seconds.
+
+            The important part:
+            The farther away we are from 20:00,
+            the stronger the tendency is to move back toward 20:00.
+        */
+        function chooseBehavior() {
+
+            const distance = seconds - TARGET;
+
+            /*
+                If we're above 20:00, favor counting down.
+                If we're below 20:00, favor counting up.
+
+                The random part still allows it to go
+                the "wrong" direction sometimes.
+            */
+
+            let probabilityDown;
+
+            if (distance > 0) {
+                probabilityDown = 0.85;
+            } else if (distance < 0) {
+                probabilityDown = 0.15;
+            } else {
+                probabilityDown = 0.50;
+            }
+
+
+            if (Math.random() < probabilityDown) {
+                direction = -1;
+            } else {
+                direction = 1;
+            }
+
+
+            /*
+                Different speeds.
+
+                Every tick changes the timer by EXACTLY
+                one second. A faster speed simply means
+                the seconds appear one after another faster.
+            */
+
+            const speedRoll = Math.random();
+
+            if (speedRoll < 0.50) {
+                tickDelay = 1000;
+            }
+            else if (speedRoll < 0.75) {
+                tickDelay = 500;
+            }
+            else if (speedRoll < 0.90) {
+                tickDelay = 250;
+            }
+            else {
+                tickDelay = 3000;
+            }
+
+
+            /*
+                Change behavior again in 5-10 seconds.
+            */
+
+            clearTimeout(modeTimeout);
+
+            const nextChange =
+                5000 + Math.random() * 5000;
+
+            modeTimeout = setTimeout(
+                chooseBehavior,
+                nextChange
+            );
+
+
+            /*
+                Restart the tick immediately using
+                the newly selected speed.
+            */
+
+            clearTimeout(tickTimeout);
+
+            tickTimeout = setTimeout(
+                tick,
+                tickDelay
+            );
+        }
+
+
+        function tick() {
+
+            if (!running) {
+                return;
+            }
+
+
+            /*
+                Move exactly ONE second.
+
+                This means if we're going fast, you'll see:
+
+                19:59
+                19:58
+                19:57
+                19:56
+
+                rather than jumping straight from
+                20:00 to 19:56.
+            */
+
+            seconds += direction;
+
+            displayTime();
+
+
+            /*
+                Stop at zero.
+            */
+
+            if (seconds <= 0) {
+
+                seconds = 0;
+
+                displayTime();
+
+                running = false;
+
+                clearTimeout(modeTimeout);
+                clearTimeout(tickTimeout);
+
+                timerElement.textContent = "BOOM!";
+
+                return;
+            }
+
+
+            /*
+                Don't let it exceed the maximum display.
+            */
+
+            if (seconds >= MAX_TIME) {
+
+                seconds = MAX_TIME;
+
+                displayTime();
+
+                running = false;
+
+                clearTimeout(modeTimeout);
+                clearTimeout(tickTimeout);
+
+                return;
+            }
+
+
+            /*
+                Schedule the next individual second.
+            */
+
+            tickTimeout = setTimeout(
+                tick,
+                tickDelay
+            );
+        }
+
+
+        function startTimer() {
+
+            clearTimeout(tickTimeout);
+            clearTimeout(modeTimeout);
+
+            seconds = TARGET;
+
+            running = true;
+
+            displayTime();
+
+            chooseBehavior();
+        }
+
+
+        restartButton.addEventListener(
+            "click",
+            startTimer
+        );
+
+
+        /*
+            Start the timer.
+        */
+
+        startTimer();
+
+    </script>
+
+</body>
+</html>
