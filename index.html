@@ -945,7 +945,7 @@
            ========================= */
 
         const settings = {
-            useSystemTime: false,
+            useSystemTime: true,
             startTime: "18:00",
             targetMode: "clock",
             targetTime: "20:00",
@@ -1110,7 +1110,7 @@
         }
 
         function initSettings() {
-            document.getElementById("useSystemTime").checked = settings.useSystemTime;
+            useSystemTimeCheckbox.checked = settings.useSystemTime;
             document.getElementById("startTime").value = settings.startTime;
             document.getElementById("targetMode").value = settings.targetMode;
             document.getElementById("targetTime").value = settings.targetTime;
@@ -1132,7 +1132,7 @@
         }
 
         function applySettings() {
-            settings.useSystemTime = document.getElementById("useSystemTime").checked;
+            settings.useSystemTime = useSystemTimeCheckbox.checked;
             settings.startTime = document.getElementById("startTime").value;
             settings.targetMode = document.getElementById("targetMode").value;
             settings.targetTime = document.getElementById("targetTime").value;
@@ -1209,6 +1209,7 @@
            INITIALIZATION
            ========================= */
 
+        settings.useSystemTime = true;
         restart();
 
     </script>
