@@ -196,6 +196,24 @@
             box-shadow: 0 0 5px #770000;
         }
 
+        .checkboxContainer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+            accent-color: #ff3333;
+        }
+
+        .checkboxLabel {
+            color: #ddd;
+            cursor: pointer;
+            flex: 1;
+        }
+
 
         /* =========================
            BUTTONS
@@ -297,6 +315,30 @@
 
                 <div class="setting">
 
+                    <div class="checkboxContainer">
+
+                        <input
+                            id="useSystemTime"
+                            type="checkbox"
+                        >
+
+                        <label for="useSystemTime" class="checkboxLabel">
+                            Start at system time
+                        </label>
+
+                    </div>
+
+                    <div class="description">
+                        When enabled, the timer starts at your current
+                        system time (HH:MM format). When disabled, uses
+                        the "Starting time" field below.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
                     <div class="settingTop">
 
                         <label>
@@ -307,15 +349,15 @@
                             id="startTime"
                             type="text"
                             value="18:00"
-                            placeholder="MM:SS"
+                            placeholder="HH:MM"
                         >
 
                     </div>
 
                     <div class="description">
-                        The time displayed when you press Restart.
-                        For example, 18:00 starts the timer at
-                        eighteen minutes.
+                        The time displayed when you press Restart (if
+                        "Start at system time" is disabled). For example,
+                        18:00 starts the timer at eighteen minutes.
                     </div>
 
                 </div>
@@ -896,12 +938,14 @@
         const applySettingsButton = document.getElementById("applySettings");
         const resetSettingsButton = document.getElementById("resetSettings");
         const closeSettingsButton = document.getElementById("closeSettings");
+        const useSystemTimeCheckbox = document.getElementById("useSystemTime");
 
         /* =========================
            SETTINGS
            ========================= */
 
         const settings = {
+            useSystemTime: false,
             startTime: "18:00",
             targetMode: "clock",
             targetTime: "20:00",
@@ -953,6 +997,13 @@
         function getCurrentTime() {
             const now = new Date();
             return now.getHours() * 60 + now.getMinutes();
+        }
+
+        function getSystemTimeFormatted() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, "0");
+            const minutes = now.getMinutes().toString().padStart(2, "0");
+            return `${hours}:${minutes}`;
         }
 
         function getTargetTime() {
@@ -1009,64 +1060,57 @@
         }
 
         function tick() {
-            if (!running) return;
-
-            if (Math.random() < settings.jumpChance / 100) {
-                const jumpDistance = Math.floor(
-                    Math.random() * (settings.maxJump - settings.minJump + 1) + settings.minJump
-                );
-                seconds += direction * jumpDistance;
-            } else {
-                seconds += direction;
+            if (!running) {
+                tickTimeout = setTimeout(tick, tickDelay);
+                return;
             }
 
-            seconds = Math.max(0, Math.min(MAX_TIME, seconds));
+            const jumpRoll = Math.random() * 100;
+            let movement = 1;
+
+            if (jumpRoll < settings.jumpChance) {
+                movement = Math.floor(Math.random() * (settings.maxJump - settings.minJump + 1)) + settings.minJump;
+            }
+
+            seconds += direction * movement;
+
             displayTime();
 
             tickTimeout = setTimeout(tick, tickDelay);
         }
 
         function changeMode() {
-            if (!running) return;
+            if (!running) {
+                modeTimeout = setTimeout(changeMode, 100);
+                return;
+            }
 
             chooseBehavior();
             chooseSpeed();
 
-            const randomWait = Math.floor(
-                Math.random() * (settings.maxModeTime - settings.minModeTime + 1) + settings.minModeTime
-            );
-
-            modeTimeout = setTimeout(changeMode, randomWait);
+            const waitTime = Math.random() * (settings.maxModeTime - settings.minModeTime) + settings.minModeTime;
+            modeTimeout = setTimeout(changeMode, waitTime);
         }
 
-        function start() {
-            seconds = timeToSeconds(settings.startTime);
-            displayTime();
+        function restart() {
+            clearTimeout(tickTimeout);
+            clearTimeout(modeTimeout);
 
+            if (settings.useSystemTime) {
+                seconds = timeToSeconds(getSystemTimeFormatted());
+            } else {
+                seconds = timeToSeconds(settings.startTime);
+            }
+
+            displayTime();
             chooseBehavior();
             chooseSpeed();
-
             tick();
             changeMode();
         }
 
-        function stop() {
-            running = false;
-            clearTimeout(tickTimeout);
-            clearTimeout(modeTimeout);
-        }
-
-        function restart() {
-            stop();
-            running = true;
-            start();
-        }
-
-        /* =========================
-           SETTINGS UI
-           ========================= */
-
-        function loadSettingsUI() {
+        function initSettings() {
+            document.getElementById("useSystemTime").checked = settings.useSystemTime;
             document.getElementById("startTime").value = settings.startTime;
             document.getElementById("targetMode").value = settings.targetMode;
             document.getElementById("targetTime").value = settings.targetTime;
@@ -1087,59 +1131,77 @@
             document.getElementById("maxJump").value = settings.maxJump;
         }
 
-        function saveSettingsFromUI() {
+        function applySettings() {
+            settings.useSystemTime = document.getElementById("useSystemTime").checked;
             settings.startTime = document.getElementById("startTime").value;
             settings.targetMode = document.getElementById("targetMode").value;
             settings.targetTime = document.getElementById("targetTime").value;
-            settings.towardChance = parseInt(document.getElementById("towardChance").value);
-            settings.awayChance = parseInt(document.getElementById("awayChance").value);
-            settings.normalSpeed = parseInt(document.getElementById("normalSpeed").value);
-            settings.fastSpeed = parseInt(document.getElementById("fastSpeed").value);
-            settings.veryFastSpeed = parseInt(document.getElementById("veryFastSpeed").value);
-            settings.slowSpeed = parseInt(document.getElementById("slowSpeed").value);
-            settings.normalChance = parseInt(document.getElementById("normalChance").value);
-            settings.fastChance = parseInt(document.getElementById("fastChance").value);
-            settings.veryFastChance = parseInt(document.getElementById("veryFastChance").value);
-            settings.slowChance = parseInt(document.getElementById("slowChance").value);
-            settings.minModeTime = parseInt(document.getElementById("minModeTime").value);
-            settings.maxModeTime = parseInt(document.getElementById("maxModeTime").value);
-            settings.jumpChance = parseInt(document.getElementById("jumpChance").value);
-            settings.minJump = parseInt(document.getElementById("minJump").value);
-            settings.maxJump = parseInt(document.getElementById("maxJump").value);
+            settings.towardChance = parseFloat(document.getElementById("towardChance").value);
+            settings.awayChance = parseFloat(document.getElementById("awayChance").value);
+            settings.normalSpeed = parseFloat(document.getElementById("normalSpeed").value);
+            settings.fastSpeed = parseFloat(document.getElementById("fastSpeed").value);
+            settings.veryFastSpeed = parseFloat(document.getElementById("veryFastSpeed").value);
+            settings.slowSpeed = parseFloat(document.getElementById("slowSpeed").value);
+            settings.normalChance = parseFloat(document.getElementById("normalChance").value);
+            settings.fastChance = parseFloat(document.getElementById("fastChance").value);
+            settings.veryFastChance = parseFloat(document.getElementById("veryFastChance").value);
+            settings.slowChance = parseFloat(document.getElementById("slowChance").value);
+            settings.minModeTime = parseFloat(document.getElementById("minModeTime").value);
+            settings.maxModeTime = parseFloat(document.getElementById("maxModeTime").value);
+            settings.jumpChance = parseFloat(document.getElementById("jumpChance").value);
+            settings.minJump = parseFloat(document.getElementById("minJump").value);
+            settings.maxJump = parseFloat(document.getElementById("maxJump").value);
+
+            settingsOverlay.style.display = "none";
+            restart();
         }
 
-        applySettingsButton.addEventListener("click", () => {
-            saveSettingsFromUI();
+        function resetSettings() {
             settingsOverlay.style.display = "none";
             restart();
-        });
+        }
 
-        resetSettingsButton.addEventListener("click", () => {
+        function closeSettings() {
             settingsOverlay.style.display = "none";
-            restart();
-        });
+        }
 
-        closeSettingsButton.addEventListener("click", () => {
-            settingsOverlay.style.display = "none";
-        });
+        function openSettings() {
+            settingsOverlay.style.display = "flex";
+            initSettings();
+        }
 
         /* =========================
-           KEYBOARD SHORTCUT
+           EVENT LISTENERS
            ========================= */
 
-        let keyBuffer = "";
-
         document.addEventListener("keydown", (event) => {
-            keyBuffer += event.key.toLowerCase();
-
-            if (keyBuffer.includes("cat")) {
-                settingsOverlay.style.display = "flex";
-                loadSettingsUI();
-                keyBuffer = "";
+            if (event.key.toLowerCase() === "c") {
+                const keys = Array.from(document.querySelectorAll(":focus")).map(el => el.tagName);
+                if (!keys.length || keys[0] !== "INPUT") {
+                    openSettings();
+                }
             }
+        });
 
-            if (keyBuffer.length > 10) {
-                keyBuffer = keyBuffer.slice(-10);
+        let keyPressBuffer = "";
+
+        document.addEventListener("keypress", (event) => {
+            keyPressBuffer += event.key.toLowerCase();
+            if (keyPressBuffer.includes("cat")) {
+                openSettings();
+                keyPressBuffer = "";
+            } else if (!["c", "a", "t"].includes(event.key.toLowerCase())) {
+                keyPressBuffer = "";
+            }
+        });
+
+        applySettingsButton.addEventListener("click", applySettings);
+        resetSettingsButton.addEventListener("click", resetSettings);
+        closeSettingsButton.addEventListener("click", closeSettings);
+
+        settingsOverlay.addEventListener("click", (event) => {
+            if (event.target === settingsOverlay) {
+                closeSettings();
             }
         });
 
@@ -1147,7 +1209,7 @@
            INITIALIZATION
            ========================= */
 
-        start();
+        restart();
 
     </script>
 
