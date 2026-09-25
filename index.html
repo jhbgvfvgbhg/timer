@@ -898,6 +898,119 @@
 
 
             <!-- =====================================
+                 SMART SPEED (MATH-BASED)
+                 ===================================== -->
+
+            <div class="section">
+
+                <h2>🧮 Smart Speed</h2>
+
+                <div class="sectionDescription">
+                    Math-based speed modifiers that change based on how
+                    far the timer is from its target. These are super chaotic!
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="checkboxContainer">
+
+                        <input
+                            id="distanceBasedSpeed"
+                            type="checkbox"
+                        >
+
+                        <label for="distanceBasedSpeed" class="checkboxLabel">
+                            Distance-based speed
+                        </label>
+
+                    </div>
+
+                    <div class="description">
+                        When enabled, the timer speeds up the closer it gets
+                        to the target, and slows down when it moves away.
+                        This creates a pulling effect toward the target.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="checkboxContainer">
+
+                        <input
+                            id="slowAwayMode"
+                            type="checkbox"
+                        >
+
+                        <label for="slowAwayMode" class="checkboxLabel">
+                            Slow only when moving away
+                        </label>
+
+                    </div>
+
+                    <div class="description">
+                        When enabled, the timer is always at normal speed,
+                        but slows down dramatically when moving away from
+                        the target. Creates a "resistance" effect.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Away penalty (ms)
+                        </label>
+
+                        <input
+                            id="awayPenalty"
+                            type="number"
+                            min="0"
+                            value="2000"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        How much slower the timer becomes when moving away
+                        (only used when "Slow only when moving away" is on).
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="checkboxContainer">
+
+                        <input
+                            id="randomizeEachTick"
+                            type="checkbox"
+                        >
+
+                        <label for="randomizeEachTick" class="checkboxLabel">
+                            Randomize speed each tick
+                        </label>
+
+                    </div>
+
+                    <div class="description">
+                        When enabled, the timer picks a new random speed
+                        for every single movement instead of waiting 5-10
+                        seconds. Makes it even more chaotic!
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================
                  BUTTONS
                  ===================================== -->
 
@@ -963,7 +1076,11 @@
             maxModeTime: 10000,
             jumpChance: 5,
             minJump: 2,
-            maxJump: 10
+            maxJump: 10,
+            distanceBasedSpeed: false,
+            slowAwayMode: false,
+            awayPenalty: 2000,
+            randomizeEachTick: false
         };
 
         const MAX_TIME = 99 * 60 + 59;
@@ -1035,6 +1152,31 @@
         }
 
         function chooseSpeed() {
+            const target = getTargetTime();
+            const distance = Math.abs(seconds - target);
+
+            // Slow away mode: super slow when moving away from target
+            if (settings.slowAwayMode) {
+                if (direction === 1 && seconds > target) {
+                    tickDelay = settings.normalSpeed + settings.awayPenalty;
+                } else if (direction === -1 && seconds < target) {
+                    tickDelay = settings.normalSpeed + settings.awayPenalty;
+                } else {
+                    tickDelay = settings.normalSpeed;
+                }
+                return;
+            }
+
+            // Distance-based speed: slower when far, faster when close
+            if (settings.distanceBasedSpeed) {
+                const maxDistance = 60 * 12; // 12 hours
+                const proximity = Math.max(0, 1 - (distance / maxDistance));
+                const speedRange = settings.normalSpeed - settings.fastSpeed;
+                tickDelay = settings.normalSpeed - (speedRange * proximity);
+                return;
+            }
+
+            // Normal speed selection
             const rand = Math.random() * 100;
             let cumulative = 0;
 
@@ -1065,6 +1207,10 @@
                 return;
             }
 
+            if (settings.randomizeEachTick) {
+                chooseSpeed();
+            }
+
             const jumpRoll = Math.random() * 100;
             let movement = 1;
 
@@ -1086,7 +1232,9 @@
             }
 
             chooseBehavior();
-            chooseSpeed();
+            if (!settings.randomizeEachTick) {
+                chooseSpeed();
+            }
 
             const waitTime = Math.random() * (settings.maxModeTime - settings.minModeTime) + settings.minModeTime;
             modeTimeout = setTimeout(changeMode, waitTime);
@@ -1110,7 +1258,7 @@
         }
 
         function initSettings() {
-            useSystemTimeCheckbox.checked = settings.useSystemTime;
+            document.getElementById("useSystemTime").checked = settings.useSystemTime;
             document.getElementById("startTime").value = settings.startTime;
             document.getElementById("targetMode").value = settings.targetMode;
             document.getElementById("targetTime").value = settings.targetTime;
@@ -1129,10 +1277,14 @@
             document.getElementById("jumpChance").value = settings.jumpChance;
             document.getElementById("minJump").value = settings.minJump;
             document.getElementById("maxJump").value = settings.maxJump;
+            document.getElementById("distanceBasedSpeed").checked = settings.distanceBasedSpeed;
+            document.getElementById("slowAwayMode").checked = settings.slowAwayMode;
+            document.getElementById("awayPenalty").value = settings.awayPenalty;
+            document.getElementById("randomizeEachTick").checked = settings.randomizeEachTick;
         }
 
         function applySettings() {
-            settings.useSystemTime = useSystemTimeCheckbox.checked;
+            settings.useSystemTime = document.getElementById("useSystemTime").checked;
             settings.startTime = document.getElementById("startTime").value;
             settings.targetMode = document.getElementById("targetMode").value;
             settings.targetTime = document.getElementById("targetTime").value;
@@ -1151,6 +1303,10 @@
             settings.jumpChance = parseFloat(document.getElementById("jumpChance").value);
             settings.minJump = parseFloat(document.getElementById("minJump").value);
             settings.maxJump = parseFloat(document.getElementById("maxJump").value);
+            settings.distanceBasedSpeed = document.getElementById("distanceBasedSpeed").checked;
+            settings.slowAwayMode = document.getElementById("slowAwayMode").checked;
+            settings.awayPenalty = parseFloat(document.getElementById("awayPenalty").value);
+            settings.randomizeEachTick = document.getElementById("randomizeEachTick").checked;
 
             settingsOverlay.style.display = "none";
             restart();
