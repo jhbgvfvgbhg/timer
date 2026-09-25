@@ -69,7 +69,7 @@
 <body>
 
     <div class="timer-container">
-        <div id="timer">20:00</div>
+        <div id="timer">00:00</div>
         <button id="restart">Restart</button>
     </div>
 
@@ -77,7 +77,6 @@
         const timerElement = document.getElementById("timer");
         const restartButton = document.getElementById("restart");
 
-        const TARGET = 20 * 60; // 20 minutes
         const MAX_TIME = 99 * 60 + 59;
 
         let seconds;
@@ -88,6 +87,17 @@
         let modeTimeout;
 
         let running = true;
+
+
+        // Get the current computer time as minutes:seconds
+        function getCurrentTime() {
+            const now = new Date();
+
+            return (
+                now.getHours() * 60 +
+                now.getMinutes()
+            );
+        }
 
 
         function displayTime() {
@@ -103,39 +113,42 @@
         }
 
 
-        /*
-            Pick a new behavior every 5-10 seconds.
-
-            The important part:
-            The farther away we are from 20:00,
-            the stronger the tendency is to move back toward 20:00.
-        */
         function chooseBehavior() {
+
+            // The target is whatever time it is right now
+            const TARGET = getCurrentTime();
 
             const distance = seconds - TARGET;
 
-            /*
-                If we're above 20:00, favor counting down.
-                If we're below 20:00, favor counting up.
 
-                The random part still allows it to go
-                the "wrong" direction sometimes.
+            /*
+                Above the current time:
+                favor counting DOWN.
+
+                Below the current time:
+                favor counting UP.
+
+                But there is still a chance to go
+                the wrong direction.
             */
 
             let probabilityDown;
 
             if (distance > 0) {
                 probabilityDown = 0.85;
-            } else if (distance < 0) {
+            }
+            else if (distance < 0) {
                 probabilityDown = 0.15;
-            } else {
+            }
+            else {
                 probabilityDown = 0.50;
             }
 
 
             if (Math.random() < probabilityDown) {
                 direction = -1;
-            } else {
+            }
+            else {
                 direction = 1;
             }
 
@@ -143,9 +156,8 @@
             /*
                 Different speeds.
 
-                Every tick changes the timer by EXACTLY
-                one second. A faster speed simply means
-                the seconds appear one after another faster.
+                Every tick still changes exactly
+                one second.
             */
 
             const speedRoll = Math.random();
@@ -165,7 +177,7 @@
 
 
             /*
-                Change behavior again in 5-10 seconds.
+                Pick a new behavior every 5-10 seconds.
             */
 
             clearTimeout(modeTimeout);
@@ -178,11 +190,6 @@
                 nextChange
             );
 
-
-            /*
-                Restart the tick immediately using
-                the newly selected speed.
-            */
 
             clearTimeout(tickTimeout);
 
@@ -200,28 +207,10 @@
             }
 
 
-            /*
-                Move exactly ONE second.
-
-                This means if we're going fast, you'll see:
-
-                19:59
-                19:58
-                19:57
-                19:56
-
-                rather than jumping straight from
-                20:00 to 19:56.
-            */
-
             seconds += direction;
 
             displayTime();
 
-
-            /*
-                Stop at zero.
-            */
 
             if (seconds <= 0) {
 
@@ -240,10 +229,6 @@
             }
 
 
-            /*
-                Don't let it exceed the maximum display.
-            */
-
             if (seconds >= MAX_TIME) {
 
                 seconds = MAX_TIME;
@@ -259,10 +244,6 @@
             }
 
 
-            /*
-                Schedule the next individual second.
-            */
-
             tickTimeout = setTimeout(
                 tick,
                 tickDelay
@@ -275,7 +256,8 @@
             clearTimeout(tickTimeout);
             clearTimeout(modeTimeout);
 
-            seconds = TARGET;
+            // Start at the actual current time
+            seconds = getCurrentTime();
 
             running = true;
 
@@ -290,10 +272,6 @@
             startTimer
         );
 
-
-        /*
-            Start the timer.
-        */
 
         startTimer();
 
