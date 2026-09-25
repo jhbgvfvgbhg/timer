@@ -695,6 +695,75 @@
 
 
             <!-- =====================================
+                 MODE TIMING
+                 ===================================== -->
+
+            <div class="section">
+
+                <h2>⏲ Mode Timing</h2>
+
+                <div class="sectionDescription">
+                    Controls how long the timer waits before changing
+                    its speed or direction mode. A random interval
+                    between the minimum and maximum is chosen each time.
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Minimum wait time (ms)
+                        </label>
+
+                        <input
+                            id="minModeTime"
+                            type="number"
+                            min="100"
+                            value="5000"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        Shortest time (in milliseconds) the timer waits
+                        before changing modes. 5000 ms means at least
+                        5 seconds. This is the lower bound.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Maximum wait time (ms)
+                        </label>
+
+                        <input
+                            id="maxModeTime"
+                            type="number"
+                            min="100"
+                            value="10000"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        Longest time (in milliseconds) the timer waits
+                        before changing modes. 10000 ms means at most
+                        10 seconds. This is the upper bound.
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================
                  JUMPS
                  ===================================== -->
 
@@ -875,6 +944,10 @@
 
             slowChance: 10,
 
+            minModeTime: 5000,
+
+            maxModeTime: 10000,
+
             jumpChance: 5,
 
             minJump: 2,
@@ -998,198 +1071,128 @@
 
                 direction =
                     Math.random() <
-                    settings.towardChance / 100
+                    (settings.towardChance / 100)
                     ? -1
                     : 1;
 
-            }
-            else if (distance < 0) {
+            } else if (distance < 0) {
 
                 direction =
                     Math.random() <
-                    settings.towardChance / 100
+                    (settings.towardChance / 100)
                     ? 1
                     : -1;
 
-            }
-            else {
+            } else {
 
                 direction =
                     Math.random() < 0.5
                     ? -1
                     : 1;
-            }
-
-
-            /*
-                Choose movement speed.
-            */
-
-            const roll =
-                Math.random() * 100;
-
-            const normalEnd =
-                settings.normalChance;
-
-            const fastEnd =
-                normalEnd +
-                settings.fastChance;
-
-            const veryFastEnd =
-                fastEnd +
-                settings.veryFastChance;
-
-
-            if (roll < normalEnd) {
-
-                tickDelay =
-                    settings.normalSpeed;
 
             }
-            else if (roll < fastEnd) {
 
-                tickDelay =
-                    settings.fastSpeed;
+        }
 
+
+        function chooseSpeed() {
+
+            const rand = Math.random() * 100;
+
+            let speed = settings.normalSpeed;
+
+            if (
+                rand <
+                settings.normalChance
+            ) {
+                speed = settings.normalSpeed;
+            } else if (
+                rand <
+                settings.normalChance +
+                settings.fastChance
+            ) {
+                speed = settings.fastSpeed;
+            } else if (
+                rand <
+                settings.normalChance +
+                settings.fastChance +
+                settings.veryFastChance
+            ) {
+                speed = settings.veryFastSpeed;
+            } else {
+                speed = settings.slowSpeed;
             }
-            else if (roll < veryFastEnd) {
 
-                tickDelay =
-                    settings.veryFastSpeed;
+            return speed;
 
-            }
-            else {
-
-                tickDelay =
-                    settings.slowSpeed;
-            }
+        }
 
 
-            /*
-                Choose a new behavior
-                every 5-10 seconds.
-            */
+        function chooseJump() {
 
-            clearTimeout(modeTimeout);
+            if (
+                Math.random() <
+                (settings.jumpChance / 100)
+            ) {
 
-            const nextChange =
-                5000 +
-                Math.random() * 5000;
-
-            modeTimeout =
-                setTimeout(
-                    chooseBehavior,
-                    nextChange
+                return Math.floor(
+                    Math.random() *
+                    (
+                        settings.maxJump -
+                        settings.minJump +
+                        1
+                    ) +
+                    settings.minJump
                 );
 
+            }
 
-            clearTimeout(tickTimeout);
+            return 1;
 
-            tickTimeout =
-                setTimeout(
-                    tick,
-                    tickDelay
-                );
         }
 
 
         function tick() {
 
-            if (!running) {
-                return;
-            }
+            seconds += direction * chooseJump();
 
-
-            /*
-                Possible jump.
-            */
-
-            const jumpHappens =
-                Math.random() <
-                settings.jumpChance / 100;
-
-
-            if (jumpHappens) {
-
-                const jumpAmount =
-                    Math.floor(
-                        Math.random() *
-                        (
-                            settings.maxJump -
-                            settings.minJump +
-                            1
-                        )
-                    ) +
-                    settings.minJump;
-
-                seconds +=
-                    direction *
-                    jumpAmount;
-
-            }
-            else {
-
-                seconds += direction;
-            }
-
-
-            /*
-                Lower boundary.
-            */
-
-            if (seconds <= 0) {
-
-                seconds = 0;
-
-                displayTime();
-
-                running = false;
-
-                clearTimeout(modeTimeout);
-                clearTimeout(tickTimeout);
-
-                timerElement.textContent =
-                    "BOOM!";
-
-                return;
-            }
-
-
-            /*
-                Upper boundary.
-            */
-
-            if (seconds >= MAX_TIME) {
-
-                seconds = MAX_TIME;
-
-                displayTime();
-
-                running = false;
-
-                clearTimeout(modeTimeout);
-                clearTimeout(tickTimeout);
-
-                return;
-            }
-
+            seconds = Math.max(
+                0,
+                Math.min(
+                    MAX_TIME,
+                    seconds
+                )
+            );
 
             displayTime();
 
+            tickTimeout = setTimeout(
+                tick,
+                tickDelay
+            );
 
-            tickTimeout =
-                setTimeout(
-                    tick,
-                    tickDelay
-                );
         }
 
 
-        /* =========================
-           START / RESET
-           ========================= */
+        function startModeCycle() {
 
-        function startTimer() {
+            chooseBehavior();
+
+            tickDelay = chooseSpeed();
+
+            tick();
+
+            const modeWait = Math.random() * (settings.maxModeTime - settings.minModeTime) + settings.minModeTime;
+
+            modeTimeout = setTimeout(
+                startModeCycle,
+                modeWait
+            );
+
+        }
+
+
+        function restart() {
 
             clearTimeout(tickTimeout);
             clearTimeout(modeTimeout);
@@ -1199,19 +1202,42 @@
                     settings.startTime
                 );
 
-            running = true;
-
             displayTime();
 
-            chooseBehavior();
+            startModeCycle();
+
         }
 
 
         /* =========================
-           LOAD SETTINGS INTO UI
+           SETTINGS MANAGEMENT
            ========================= */
 
-        function loadSettingsIntoPanel() {
+        function loadSettings() {
+
+            const saved =
+                localStorage.getItem(
+                    "timerSettings"
+                );
+
+            if (saved) {
+
+                const parsed =
+                    JSON.parse(saved);
+
+                Object.assign(
+                    settings,
+                    parsed
+                );
+
+            }
+
+            applySettingsToUI();
+
+        }
+
+
+        function applySettingsToUI() {
 
             document.getElementById(
                 "startTime"
@@ -1279,6 +1305,16 @@
                 settings.slowChance;
 
             document.getElementById(
+                "minModeTime"
+            ).value =
+                settings.minModeTime;
+
+            document.getElementById(
+                "maxModeTime"
+            ).value =
+                settings.maxModeTime;
+
+            document.getElementById(
                 "jumpChance"
             ).value =
                 settings.jumpChance;
@@ -1292,19 +1328,16 @@
                 "maxJump"
             ).value =
                 settings.maxJump;
+
         }
 
 
-        /* =========================
-           READ SETTINGS
-           ========================= */
-
-        function readSettingsFromPanel() {
+        function applySettings() {
 
             settings.startTime =
                 document.getElementById(
                     "startTime"
-                ).value;
+                ).value || "18:00";
 
             settings.targetMode =
                 document.getElementById(
@@ -1314,202 +1347,250 @@
             settings.targetTime =
                 document.getElementById(
                     "targetTime"
-                ).value;
+                ).value || "20:00";
 
             settings.towardChance =
-                Number(
+                parseInt(
                     document.getElementById(
                         "towardChance"
                     ).value
-                );
+                ) || 85;
 
             settings.awayChance =
-                Number(
+                parseInt(
                     document.getElementById(
                         "awayChance"
                     ).value
-                );
+                ) || 15;
 
             settings.normalSpeed =
-                Number(
+                parseInt(
                     document.getElementById(
                         "normalSpeed"
                     ).value
-                );
+                ) || 1000;
 
             settings.fastSpeed =
-                Number(
+                parseInt(
                     document.getElementById(
                         "fastSpeed"
                     ).value
-                );
+                ) || 500;
 
             settings.veryFastSpeed =
-                Number(
+                parseInt(
                     document.getElementById(
                         "veryFastSpeed"
                     ).value
-                );
+                ) || 250;
 
             settings.slowSpeed =
-                Number(
+                parseInt(
                     document.getElementById(
                         "slowSpeed"
                     ).value
-                );
+                ) || 3000;
 
             settings.normalChance =
-                Number(
+                parseInt(
                     document.getElementById(
                         "normalChance"
                     ).value
-                );
+                ) || 50;
 
             settings.fastChance =
-                Number(
+                parseInt(
                     document.getElementById(
                         "fastChance"
                     ).value
-                );
+                ) || 25;
 
             settings.veryFastChance =
-                Number(
+                parseInt(
                     document.getElementById(
                         "veryFastChance"
                     ).value
-                );
+                ) || 15;
 
             settings.slowChance =
-                Number(
+                parseInt(
                     document.getElementById(
                         "slowChance"
                     ).value
-                );
+                ) || 10;
+
+            settings.minModeTime =
+                parseInt(
+                    document.getElementById(
+                        "minModeTime"
+                    ).value
+                ) || 5000;
+
+            settings.maxModeTime =
+                parseInt(
+                    document.getElementById(
+                        "maxModeTime"
+                    ).value
+                ) || 10000;
 
             settings.jumpChance =
-                Number(
+                parseInt(
                     document.getElementById(
                         "jumpChance"
                     ).value
-                );
+                ) || 5;
 
             settings.minJump =
-                Number(
+                parseInt(
                     document.getElementById(
                         "minJump"
                     ).value
-                );
+                ) || 2;
 
             settings.maxJump =
-                Number(
+                parseInt(
                     document.getElementById(
                         "maxJump"
                     ).value
-                );
+                ) || 10;
+
+            localStorage.setItem(
+                "timerSettings",
+                JSON.stringify(settings)
+            );
+
+            settingsOverlay.style.display = "none";
+
+            restart();
+
+        }
+
+
+        function resetSettings() {
+
+            Object.assign(settings, {
+
+                startTime: "18:00",
+                targetMode: "clock",
+                targetTime: "20:00",
+                towardChance: 85,
+                awayChance: 15,
+                normalSpeed: 1000,
+                fastSpeed: 500,
+                veryFastSpeed: 250,
+                slowSpeed: 3000,
+                normalChance: 50,
+                fastChance: 25,
+                veryFastChance: 15,
+                slowChance: 10,
+                minModeTime: 5000,
+                maxModeTime: 10000,
+                jumpChance: 5,
+                minJump: 2,
+                maxJump: 10
+            });
+
+            localStorage.removeItem(
+                "timerSettings"
+            );
+
+            applySettingsToUI();
+
+            settingsOverlay.style.display = "none";
+
+            restart();
+
         }
 
 
         /* =========================
-           SECRET CAT CODE
+           EVENT LISTENERS
            ========================= */
-
-        let secretCode = "";
 
         document.addEventListener(
             "keydown",
-            function(event) {
+            (event) => {
 
                 if (
-                    event.key.length !== 1
-                ) {
-                    return;
-                }
-
-                secretCode +=
-                    event.key.toLowerCase();
-
-                if (
-                    secretCode.length > 3
-                ) {
-                    secretCode =
-                        secretCode.slice(-3);
-                }
-
-                if (
-                    secretCode === "cat"
+                    event.key.toLowerCase() === "c"
                 ) {
 
-                    secretCode = "";
+                    static pressC = 0;
+                    static pressA = 0;
+                    static pressT = 0;
 
-                    loadSettingsIntoPanel();
+                    pressC = 1;
 
-                    settingsOverlay.style.display =
-                        "flex";
+                } else if (
+                    event.key.toLowerCase() === "a" &&
+                    pressC
+                ) {
+
+                    pressA = 1;
+
+                } else if (
+                    event.key.toLowerCase() === "t" &&
+                    pressC &&
+                    pressA
+                ) {
+
+                    settingsOverlay.style.display = "flex";
+                    pressC = 0;
+                    pressA = 0;
+                    pressT = 0;
+
+                } else {
+
+                    pressC = 0;
+                    pressA = 0;
+                    pressT = 0;
+
                 }
+
             }
         );
 
-
-        /* =========================
-           CLOSE SETTINGS
-           ========================= */
-
-        closeSettingsButton.addEventListener(
-            "click",
-            function() {
-
-                settingsOverlay.style.display =
-                    "none";
-            }
-        );
-
-
-        /* =========================
-           APPLY + RESTART
-           ========================= */
 
         applySettingsButton.addEventListener(
             "click",
-            function() {
-
-                readSettingsFromPanel();
-
-                settingsOverlay.style.display =
-                    "none";
-
-                startTimer();
-            }
+            applySettings
         );
-
-
-        /* =========================
-           RESET TIMER
-           ========================= */
 
         resetSettingsButton.addEventListener(
             "click",
-            function() {
+            resetSettings
+        );
 
-                /*
-                    Reset the timer using whatever
-                    starting time is currently configured.
-                */
+        closeSettingsButton.addEventListener(
+            "click",
+            () => {
+                settingsOverlay.style.display = "none";
+            }
+        );
 
-                readSettingsFromPanel();
+        settingsOverlay.addEventListener(
+            "click",
+            (event) => {
 
-                startTimer();
+                if (
+                    event.target === settingsOverlay
+                ) {
+                    settingsOverlay.style.display = "none";
+                }
+
             }
         );
 
 
-
         /* =========================
-           START
+           INITIALIZATION
            ========================= */
 
-        startTimer();
+        loadSettings();
+        restart();
 
     </script>
 
 </body>
+
 </html>
