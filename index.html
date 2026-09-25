@@ -43,25 +43,216 @@
                 0 0 40px #880000;
         }
 
-        #restart {
-            margin-top: 30px;
 
-            padding: 10px 22px;
+
+        /* =========================
+           SETTINGS OVERLAY
+           ========================= */
+
+        #settingsOverlay {
+            display: none;
+
+            position: fixed;
+            inset: 0;
+
+            background: rgba(0, 0, 0, 0.88);
+
+            justify-content: center;
+            align-items: center;
+
+            z-index: 1000;
+        }
+
+
+        /* =========================
+           SETTINGS PANEL
+           ========================= */
+
+        #settingsPanel {
+            width: min(760px, 94vw);
+            max-height: 92vh;
+            overflow-y: auto;
+
+            background: #151515;
+
+            border: 1px solid #ff3333;
+            border-radius: 10px;
+
+            padding: 25px;
+
+            box-shadow:
+                0 0 15px red,
+                0 0 40px #550000;
+
+            color: #eee;
+        }
+
+        #settingsPanel h1 {
+            margin-top: 0;
+            margin-bottom: 5px;
+
+            color: #ff3333;
+
+            text-align: center;
+
+            text-shadow:
+                0 0 10px red;
+        }
+
+        .secretHint {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 25px;
+        }
+
+
+        /* =========================
+           SECTIONS
+           ========================= */
+
+        .section {
+            margin-top: 20px;
+            padding: 16px;
+
+            border: 1px solid #333;
+            border-radius: 6px;
+
+            background: #101010;
+        }
+
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 5px;
+
+            color: #ff5555;
+
+            font-size: 19px;
+        }
+
+        .sectionDescription {
+            color: #777;
+
+            font-size: 12px;
+
+            margin-bottom: 18px;
+
+            line-height: 1.5;
+        }
+
+
+        /* =========================
+           SETTINGS
+           ========================= */
+
+        .setting {
+            margin: 18px 0;
+        }
+
+        .settingTop {
+            display: grid;
+            grid-template-columns: 1fr 160px;
+
+            align-items: center;
+
+            gap: 15px;
+        }
+
+        .setting label {
+            color: #ddd;
+        }
+
+        .description {
+            margin-top: 6px;
+
+            color: #777;
+
+            font-size: 12px;
+
+            line-height: 1.45;
+        }
+
+        input,
+        select {
+            width: 100%;
+
+            padding: 8px;
+
+            background: #080808;
+            color: #ff5555;
+
+            border: 1px solid #555;
+            border-radius: 4px;
+
+            font-family: monospace;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+
+            border-color: #ff3333;
+
+            box-shadow: 0 0 5px #770000;
+        }
+
+
+        /* =========================
+           BUTTONS
+           ========================= */
+
+        .buttons {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 10px;
+
+            margin-top: 25px;
+        }
+
+        .settingsButton {
+            padding: 12px;
 
             background: #111;
             color: #ff3333;
 
             border: 1px solid #ff3333;
-            border-radius: 6px;
+            border-radius: 5px;
 
             font-family: monospace;
-            font-size: 16px;
 
             cursor: pointer;
         }
 
-        #restart:hover {
+        .settingsButton:hover {
             background: #211;
+        }
+
+        .dangerButton {
+            color: #ff7777;
+            border-color: #ff7777;
+        }
+
+
+        /* =========================
+           MOBILE
+           ========================= */
+
+        @media (max-width: 600px) {
+
+            .settingTop {
+                grid-template-columns: 1fr;
+            }
+
+            .buttons {
+                grid-template-columns: 1fr;
+            }
+
+            #settingsPanel {
+                padding: 18px;
+            }
         }
     </style>
 </head>
@@ -69,15 +260,631 @@
 <body>
 
     <div class="timer-container">
+
         <div id="timer">00:00</div>
-        <button id="restart">Restart</button>
+
+  
+
     </div>
 
+
+    <!-- =====================================
+         SECRET SETTINGS
+         ===================================== -->
+
+    <div id="settingsOverlay">
+
+        <div id="settingsPanel">
+
+            <h1>🐈 SECRET SETTINGS</h1>
+
+            <div class="secretHint">
+                Type "cat" anywhere on the timer to open this menu.
+            </div>
+
+
+            <!-- =====================================
+                 TIME
+                 ===================================== -->
+
+            <div class="section">
+
+                <h2>⏱ Time</h2>
+
+                <div class="sectionDescription">
+                    Controls where the timer starts and what time it
+                    tries to move toward.
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Starting time
+                        </label>
+
+                        <input
+                            id="startTime"
+                            type="text"
+                            value="18:00"
+                            placeholder="MM:SS"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        The time displayed when you press Restart.
+                        For example, 18:00 starts the timer at
+                        eighteen minutes.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Target mode
+                        </label>
+
+                        <select id="targetMode">
+
+                            <option value="clock">
+                                Computer time
+                            </option>
+
+                            <option value="custom">
+                                Custom time
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                    <div class="description">
+                        Computer time makes the target follow your
+                        real clock. Custom time gives the timer a
+                        fixed target instead.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Custom target
+                        </label>
+
+                        <input
+                            id="targetTime"
+                            type="text"
+                            value="20:00"
+                            placeholder="MM:SS"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        The target used when Target Mode is set to
+                        Custom time. Example: 20:00 makes the timer
+                        tend toward twenty minutes.
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================
+                 DIRECTION
+                 ===================================== -->
+
+            <div class="section">
+
+                <h2>↔ Direction</h2>
+
+                <div class="sectionDescription">
+                    These settings determine how strongly the timer
+                    wants to move toward its target.
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Move toward target (%)
+                        </label>
+
+                        <input
+                            id="towardChance"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value="85"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        When the timer is away from the target, this
+                        is the chance that it moves back toward it.
+                        Higher values make the timer more obedient.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Move away from target (%)
+                        </label>
+
+                        <input
+                            id="awayChance"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value="15"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        Controls how often the timer ignores the
+                        target and moves in the opposite direction.
+                        Higher values make its behavior more chaotic.
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================
+                 SPEED
+                 ===================================== -->
+
+            <div class="section">
+
+                <h2>⚡ Movement Speed</h2>
+
+                <div class="sectionDescription">
+                    The timer always changes by seconds, but these
+                    settings control how quickly those changes happen.
+                    1000 ms means one second between movements.
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Normal speed
+                        </label>
+
+                        <input
+                            id="normalSpeed"
+                            type="number"
+                            min="1"
+                            value="1000"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        The standard movement speed. 1000 ms means
+                        the timer changes once every second.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Fast speed
+                        </label>
+
+                        <input
+                            id="fastSpeed"
+                            type="number"
+                            min="1"
+                            value="500"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        How quickly the timer moves during a fast
+                        section. 500 ms means two timer seconds
+                        appear every real second.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Very fast speed
+                        </label>
+
+                        <input
+                            id="veryFastSpeed"
+                            type="number"
+                            min="1"
+                            value="250"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        An extremely fast movement speed. 250 ms
+                        means four timer seconds appear every real
+                        second.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Slow speed
+                        </label>
+
+                        <input
+                            id="slowSpeed"
+                            type="number"
+                            min="1"
+                            value="3000"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        A slow movement speed. 3000 ms means one
+                        timer second appears every three real seconds.
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================
+                 SPEED CHANCES
+                 ===================================== -->
+
+            <div class="section">
+
+                <h2>🎲 Speed Chances</h2>
+
+                <div class="sectionDescription">
+                    Every 5-10 seconds, the timer chooses a new
+                    movement speed. These percentages control how
+                    likely each speed is to be selected.
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Normal speed (%)
+                        </label>
+
+                        <input
+                            id="normalChance"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value="50"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        Chance of selecting the normal movement speed.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Fast speed (%)
+                        </label>
+
+                        <input
+                            id="fastChance"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value="25"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        Chance of selecting the fast movement speed.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Very fast speed (%)
+                        </label>
+
+                        <input
+                            id="veryFastChance"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value="15"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        Chance of selecting the very fast movement speed.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Slow speed (%)
+                        </label>
+
+                        <input
+                            id="slowChance"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value="10"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        Chance of selecting the slow movement speed.
+                    </div>
+
+                </div>
+
+
+                <div class="description">
+                    Tip: the four speed chances should add up to
+                    roughly 100%.
+                </div>
+
+            </div>
+
+
+            <!-- =====================================
+                 JUMPS
+                 ===================================== -->
+
+            <div class="section">
+
+                <h2>🦘 Jumps</h2>
+
+                <div class="sectionDescription">
+                    Jumps allow the timer to occasionally skip several
+                    seconds at once instead of moving by exactly one
+                    second.
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Jump chance (%)
+                        </label>
+
+                        <input
+                            id="jumpChance"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value="5"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        The chance that any individual movement will
+                        become a jump instead of a normal one-second
+                        movement.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Minimum jump
+                        </label>
+
+                        <input
+                            id="minJump"
+                            type="number"
+                            min="1"
+                            value="2"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        The smallest number of seconds a jump can
+                        move the timer.
+                    </div>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <div class="settingTop">
+
+                        <label>
+                            Maximum jump
+                        </label>
+
+                        <input
+                            id="maxJump"
+                            type="number"
+                            min="1"
+                            value="10"
+                        >
+
+                    </div>
+
+                    <div class="description">
+                        The largest number of seconds a jump can
+                        move the timer.
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =====================================
+                 BUTTONS
+                 ===================================== -->
+
+            <div class="buttons">
+
+                <button
+                    class="settingsButton"
+                    id="applySettings"
+                >
+                    Apply & Restart
+                </button>
+
+                <button
+                    class="settingsButton dangerButton"
+                    id="resetSettings"
+                >
+                    Reset Timer
+                </button>
+
+                <button
+                    class="settingsButton"
+                    id="closeSettings"
+                >
+                    Close Settings
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
     <script>
-        const timerElement = document.getElementById("timer");
-        const restartButton = document.getElementById("restart");
+
+        const timerElement =
+            document.getElementById("timer");
+
+        const restartButton =
+            document.getElementById("restart");
+
+        const settingsOverlay =
+            document.getElementById("settingsOverlay");
+
+        const applySettingsButton =
+            document.getElementById("applySettings");
+
+        const resetSettingsButton =
+            document.getElementById("resetSettings");
+
+        const closeSettingsButton =
+            document.getElementById("closeSettings");
+
+
+        /* =========================
+           SETTINGS
+           ========================= */
+
+        const settings = {
+
+            startTime: "18:00",
+
+            targetMode: "clock",
+
+            targetTime: "20:00",
+
+            towardChance: 85,
+
+            awayChance: 15,
+
+            normalSpeed: 1000,
+
+            fastSpeed: 500,
+
+            veryFastSpeed: 250,
+
+            slowSpeed: 3000,
+
+            normalChance: 50,
+
+            fastChance: 25,
+
+            veryFastChance: 15,
+
+            slowChance: 10,
+
+            jumpChance: 5,
+
+            minJump: 2,
+
+            maxJump: 10
+        };
+
 
         const MAX_TIME = 99 * 60 + 59;
+
 
         let seconds;
         let direction;
@@ -89,8 +896,60 @@
         let running = true;
 
 
-        // Get the current computer time as minutes:seconds
+        /* =========================
+           TIME FUNCTIONS
+           ========================= */
+
+        function timeToSeconds(time) {
+
+            const parts = time.split(":");
+
+            if (parts.length !== 2) {
+                return 0;
+            }
+
+            const minutes =
+                parseInt(parts[0]) || 0;
+
+            const secs =
+                parseInt(parts[1]) || 0;
+
+            return (
+                minutes * 60 +
+                secs
+            );
+        }
+
+
+        function secondsToTime(totalSeconds) {
+
+            totalSeconds =
+                Math.max(
+                    0,
+                    Math.min(
+                        MAX_TIME,
+                        totalSeconds
+                    )
+                );
+
+            const mins =
+                Math.floor(
+                    totalSeconds / 60
+                )
+                .toString()
+                .padStart(2, "0");
+
+            const secs =
+                (totalSeconds % 60)
+                .toString()
+                .padStart(2, "0");
+
+            return `${mins}:${secs}`;
+        }
+
+
         function getCurrentTime() {
+
             const now = new Date();
 
             return (
@@ -100,103 +959,137 @@
         }
 
 
-        function displayTime() {
-            const mins = Math.floor(seconds / 60)
-                .toString()
-                .padStart(2, "0");
+        function getTargetTime() {
 
-            const secs = (seconds % 60)
-                .toString()
-                .padStart(2, "0");
+            if (
+                settings.targetMode ===
+                "clock"
+            ) {
+                return getCurrentTime();
+            }
 
-            timerElement.textContent = `${mins}:${secs}`;
+            return timeToSeconds(
+                settings.targetTime
+            );
         }
 
 
+        function displayTime() {
+
+            timerElement.textContent =
+                secondsToTime(seconds);
+        }
+
+
+        /* =========================
+           BEHAVIOR
+           ========================= */
+
         function chooseBehavior() {
 
-            // The target is whatever time it is right now
-            const TARGET = getCurrentTime();
+            const target =
+                getTargetTime();
 
-            const distance = seconds - TARGET;
+            const distance =
+                seconds - target;
 
-
-            /*
-                Above the current time:
-                favor counting DOWN.
-
-                Below the current time:
-                favor counting UP.
-
-                But there is still a chance to go
-                the wrong direction.
-            */
-
-            let probabilityDown;
 
             if (distance > 0) {
-                probabilityDown = 0.85;
+
+                direction =
+                    Math.random() <
+                    settings.towardChance / 100
+                    ? -1
+                    : 1;
+
             }
             else if (distance < 0) {
-                probabilityDown = 0.15;
+
+                direction =
+                    Math.random() <
+                    settings.towardChance / 100
+                    ? 1
+                    : -1;
+
             }
             else {
-                probabilityDown = 0.50;
-            }
 
-
-            if (Math.random() < probabilityDown) {
-                direction = -1;
-            }
-            else {
-                direction = 1;
+                direction =
+                    Math.random() < 0.5
+                    ? -1
+                    : 1;
             }
 
 
             /*
-                Different speeds.
-
-                Every tick still changes exactly
-                one second.
+                Choose movement speed.
             */
 
-            const speedRoll = Math.random();
+            const roll =
+                Math.random() * 100;
 
-            if (speedRoll < 0.50) {
-                tickDelay = 1000;
+            const normalEnd =
+                settings.normalChance;
+
+            const fastEnd =
+                normalEnd +
+                settings.fastChance;
+
+            const veryFastEnd =
+                fastEnd +
+                settings.veryFastChance;
+
+
+            if (roll < normalEnd) {
+
+                tickDelay =
+                    settings.normalSpeed;
+
             }
-            else if (speedRoll < 0.75) {
-                tickDelay = 500;
+            else if (roll < fastEnd) {
+
+                tickDelay =
+                    settings.fastSpeed;
+
             }
-            else if (speedRoll < 0.90) {
-                tickDelay = 250;
+            else if (roll < veryFastEnd) {
+
+                tickDelay =
+                    settings.veryFastSpeed;
+
             }
             else {
-                tickDelay = 3000;
+
+                tickDelay =
+                    settings.slowSpeed;
             }
 
 
             /*
-                Pick a new behavior every 5-10 seconds.
+                Choose a new behavior
+                every 5-10 seconds.
             */
 
             clearTimeout(modeTimeout);
 
             const nextChange =
-                5000 + Math.random() * 5000;
+                5000 +
+                Math.random() * 5000;
 
-            modeTimeout = setTimeout(
-                chooseBehavior,
-                nextChange
-            );
+            modeTimeout =
+                setTimeout(
+                    chooseBehavior,
+                    nextChange
+                );
 
 
             clearTimeout(tickTimeout);
 
-            tickTimeout = setTimeout(
-                tick,
-                tickDelay
-            );
+            tickTimeout =
+                setTimeout(
+                    tick,
+                    tickDelay
+                );
         }
 
 
@@ -207,10 +1100,42 @@
             }
 
 
-            seconds += direction;
+            /*
+                Possible jump.
+            */
 
-            displayTime();
+            const jumpHappens =
+                Math.random() <
+                settings.jumpChance / 100;
 
+
+            if (jumpHappens) {
+
+                const jumpAmount =
+                    Math.floor(
+                        Math.random() *
+                        (
+                            settings.maxJump -
+                            settings.minJump +
+                            1
+                        )
+                    ) +
+                    settings.minJump;
+
+                seconds +=
+                    direction *
+                    jumpAmount;
+
+            }
+            else {
+
+                seconds += direction;
+            }
+
+
+            /*
+                Lower boundary.
+            */
 
             if (seconds <= 0) {
 
@@ -223,11 +1148,16 @@
                 clearTimeout(modeTimeout);
                 clearTimeout(tickTimeout);
 
-                timerElement.textContent = "BOOM!";
+                timerElement.textContent =
+                    "BOOM!";
 
                 return;
             }
 
+
+            /*
+                Upper boundary.
+            */
 
             if (seconds >= MAX_TIME) {
 
@@ -244,20 +1174,30 @@
             }
 
 
-            tickTimeout = setTimeout(
-                tick,
-                tickDelay
-            );
+            displayTime();
+
+
+            tickTimeout =
+                setTimeout(
+                    tick,
+                    tickDelay
+                );
         }
 
+
+        /* =========================
+           START / RESET
+           ========================= */
 
         function startTimer() {
 
             clearTimeout(tickTimeout);
             clearTimeout(modeTimeout);
 
-            // Start at the actual current time
-            seconds = getCurrentTime();
+            seconds =
+                timeToSeconds(
+                    settings.startTime
+                );
 
             running = true;
 
@@ -267,11 +1207,305 @@
         }
 
 
-        restartButton.addEventListener(
-            "click",
-            startTimer
+        /* =========================
+           LOAD SETTINGS INTO UI
+           ========================= */
+
+        function loadSettingsIntoPanel() {
+
+            document.getElementById(
+                "startTime"
+            ).value =
+                settings.startTime;
+
+            document.getElementById(
+                "targetMode"
+            ).value =
+                settings.targetMode;
+
+            document.getElementById(
+                "targetTime"
+            ).value =
+                settings.targetTime;
+
+            document.getElementById(
+                "towardChance"
+            ).value =
+                settings.towardChance;
+
+            document.getElementById(
+                "awayChance"
+            ).value =
+                settings.awayChance;
+
+            document.getElementById(
+                "normalSpeed"
+            ).value =
+                settings.normalSpeed;
+
+            document.getElementById(
+                "fastSpeed"
+            ).value =
+                settings.fastSpeed;
+
+            document.getElementById(
+                "veryFastSpeed"
+            ).value =
+                settings.veryFastSpeed;
+
+            document.getElementById(
+                "slowSpeed"
+            ).value =
+                settings.slowSpeed;
+
+            document.getElementById(
+                "normalChance"
+            ).value =
+                settings.normalChance;
+
+            document.getElementById(
+                "fastChance"
+            ).value =
+                settings.fastChance;
+
+            document.getElementById(
+                "veryFastChance"
+            ).value =
+                settings.veryFastChance;
+
+            document.getElementById(
+                "slowChance"
+            ).value =
+                settings.slowChance;
+
+            document.getElementById(
+                "jumpChance"
+            ).value =
+                settings.jumpChance;
+
+            document.getElementById(
+                "minJump"
+            ).value =
+                settings.minJump;
+
+            document.getElementById(
+                "maxJump"
+            ).value =
+                settings.maxJump;
+        }
+
+
+        /* =========================
+           READ SETTINGS
+           ========================= */
+
+        function readSettingsFromPanel() {
+
+            settings.startTime =
+                document.getElementById(
+                    "startTime"
+                ).value;
+
+            settings.targetMode =
+                document.getElementById(
+                    "targetMode"
+                ).value;
+
+            settings.targetTime =
+                document.getElementById(
+                    "targetTime"
+                ).value;
+
+            settings.towardChance =
+                Number(
+                    document.getElementById(
+                        "towardChance"
+                    ).value
+                );
+
+            settings.awayChance =
+                Number(
+                    document.getElementById(
+                        "awayChance"
+                    ).value
+                );
+
+            settings.normalSpeed =
+                Number(
+                    document.getElementById(
+                        "normalSpeed"
+                    ).value
+                );
+
+            settings.fastSpeed =
+                Number(
+                    document.getElementById(
+                        "fastSpeed"
+                    ).value
+                );
+
+            settings.veryFastSpeed =
+                Number(
+                    document.getElementById(
+                        "veryFastSpeed"
+                    ).value
+                );
+
+            settings.slowSpeed =
+                Number(
+                    document.getElementById(
+                        "slowSpeed"
+                    ).value
+                );
+
+            settings.normalChance =
+                Number(
+                    document.getElementById(
+                        "normalChance"
+                    ).value
+                );
+
+            settings.fastChance =
+                Number(
+                    document.getElementById(
+                        "fastChance"
+                    ).value
+                );
+
+            settings.veryFastChance =
+                Number(
+                    document.getElementById(
+                        "veryFastChance"
+                    ).value
+                );
+
+            settings.slowChance =
+                Number(
+                    document.getElementById(
+                        "slowChance"
+                    ).value
+                );
+
+            settings.jumpChance =
+                Number(
+                    document.getElementById(
+                        "jumpChance"
+                    ).value
+                );
+
+            settings.minJump =
+                Number(
+                    document.getElementById(
+                        "minJump"
+                    ).value
+                );
+
+            settings.maxJump =
+                Number(
+                    document.getElementById(
+                        "maxJump"
+                    ).value
+                );
+        }
+
+
+        /* =========================
+           SECRET CAT CODE
+           ========================= */
+
+        let secretCode = "";
+
+        document.addEventListener(
+            "keydown",
+            function(event) {
+
+                if (
+                    event.key.length !== 1
+                ) {
+                    return;
+                }
+
+                secretCode +=
+                    event.key.toLowerCase();
+
+                if (
+                    secretCode.length > 3
+                ) {
+                    secretCode =
+                        secretCode.slice(-3);
+                }
+
+                if (
+                    secretCode === "cat"
+                ) {
+
+                    secretCode = "";
+
+                    loadSettingsIntoPanel();
+
+                    settingsOverlay.style.display =
+                        "flex";
+                }
+            }
         );
 
+
+        /* =========================
+           CLOSE SETTINGS
+           ========================= */
+
+        closeSettingsButton.addEventListener(
+            "click",
+            function() {
+
+                settingsOverlay.style.display =
+                    "none";
+            }
+        );
+
+
+        /* =========================
+           APPLY + RESTART
+           ========================= */
+
+        applySettingsButton.addEventListener(
+            "click",
+            function() {
+
+                readSettingsFromPanel();
+
+                settingsOverlay.style.display =
+                    "none";
+
+                startTimer();
+            }
+        );
+
+
+        /* =========================
+           RESET TIMER
+           ========================= */
+
+        resetSettingsButton.addEventListener(
+            "click",
+            function() {
+
+                /*
+                    Reset the timer using whatever
+                    starting time is currently configured.
+                */
+
+                readSettingsFromPanel();
+
+                startTimer();
+            }
+        );
+
+
+
+        /* =========================
+           START
+           ========================= */
 
         startTimer();
 
