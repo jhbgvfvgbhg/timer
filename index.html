@@ -43,6 +43,20 @@
                 0 0 40px #880000;
         }
 
+        #debugInfo {
+            display: none;
+            margin-top: 30px;
+            color: #ffaa00;
+            font-size: 14px;
+            text-shadow:
+                0 0 5px #ff6600;
+            line-height: 1.6;
+        }
+
+        #debugInfo.visible {
+            display: block;
+        }
+
 
 
         /* =========================
@@ -280,6 +294,13 @@
     <div class="timer-container">
 
         <div id="timer">00:00</div>
+
+        <div id="debugInfo">
+            <div>Speed: <span id="debugSpeed">--</span> ms</div>
+            <div>Target: <span id="debugTarget">--</span></div>
+            <div>Direction: <span id="debugDirection">--</span></div>
+            <div>Distance: <span id="debugDistance">--</span></div>
+        </div>
 
     </div>
 
@@ -1163,6 +1184,7 @@
 
         const timerElement = document.getElementById("timer");
         const settingsOverlay = document.getElementById("settingsOverlay");
+        const debugInfo = document.getElementById("debugInfo");
         const applySettingsButton = document.getElementById("applySettings");
         const resetSettingsButton = document.getElementById("resetSettings");
         const closeSettingsButton = document.getElementById("closeSettings");
@@ -1210,6 +1232,7 @@
         let tickTimeout;
         let modeTimeout;
         let running = true;
+        let debugMode = false;
 
         /* =========================
            TIME FUNCTIONS
@@ -1272,6 +1295,30 @@
 
         function displayTime() {
             timerElement.textContent = secondsToTime(seconds);
+            updateDebugInfo();
+        }
+
+        function updateDebugInfo() {
+            if (!debugMode) return;
+
+            const target = getTargetTime();
+            const distance = Math.abs(seconds - target);
+            const dirStr = direction === 1 ? "↑" : "↓";
+
+            document.getElementById("debugSpeed").textContent = Math.round(tickDelay);
+            document.getElementById("debugTarget").textContent = secondsToTime(Math.round(target));
+            document.getElementById("debugDirection").textContent = dirStr;
+            document.getElementById("debugDistance").textContent = Math.round(distance);
+        }
+
+        function toggleDebugMode() {
+            debugMode = !debugMode;
+            if (debugMode) {
+                debugInfo.classList.add("visible");
+                updateDebugInfo();
+            } else {
+                debugInfo.classList.remove("visible");
+            }
         }
 
         /* =========================
@@ -1507,8 +1554,11 @@
             if (keyPressBuffer.endsWith("cat")) {
                 openSettings();
                 keyPressBuffer = "";
+            } else if (keyPressBuffer.endsWith("dog")) {
+                toggleDebugMode();
+                keyPressBuffer = "";
             } else if (keyPressBuffer.length > 3) {
-                // Keep only the last 3 characters to catch "cat" mid-typing
+                // Keep only the last 3 characters to catch sequences mid-typing
                 keyPressBuffer = keyPressBuffer.slice(-3);
             }
         });
