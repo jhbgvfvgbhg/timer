@@ -1383,19 +1383,24 @@
             const target = getTargetTime();
             const distance = Math.abs(seconds - target);
 
-if (settings.slowAwayMode) {
-    // If direction matches trying to close the gap, we're moving toward
-    const movingToward = (distance > 0 && direction === -1) || (distance < 0 && direction === 1);
+            if (settings.slowAwayMode) {
+                // Needs the *signed* gap. The outer `distance` is
+                // Math.abs(...), so the old `distance < 0` arm could never
+                // fire: a timer sitting below its target and moving up to
+                // close the gap was charged the away penalty, while real
+                // away movement ran at full speed.
+                const gap = seconds - target;
+                const movingAway = (gap > 0 && direction === 1) || (gap < 0 && direction === -1);
 
-    tickDelay = movingToward
-        ? settings.normalSpeed
-        : settings.normalSpeed + settings.awayPenalty;
+                tickDelay = movingAway
+                    ? settings.normalSpeed + settings.awayPenalty
+                    : settings.normalSpeed;
 
-    if ((settings.chaosMultiplier || 1) > 1) {
-        tickDelay = Math.max(50, tickDelay / (settings.chaosMultiplier || 1));
-    }
-    return;
-}
+                if ((settings.chaosMultiplier || 1) > 1) {
+                    tickDelay = Math.max(50, tickDelay / (settings.chaosMultiplier || 1));
+                }
+                return;
+            }
 
             if (settings.distanceBasedSpeed) {
                 const maxDistance = 60 * 12;
