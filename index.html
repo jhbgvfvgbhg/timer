@@ -1061,8 +1061,8 @@
                     </div>
 
                     <div class="description">
-                        Adds a little wave motion to the timer so it keeps
-                        wobbling slightly around its target like a bad idea.
+                        Makes the target wobble and the speed oscillate
+                        sinusoidally. Pretty trippy!
                     </div>
 
                 </div>
@@ -1084,8 +1084,9 @@
                     </div>
 
                     <div class="description">
-                        The target itself gently circles around its base time,
-                        so the timer is always chasing a moving goal.
+                        Makes the target orbit around a point instead of
+                        staying still. Combines chaotically with other
+                        modes!
                     </div>
 
                 </div>
@@ -1096,22 +1097,22 @@
                     <div class="settingTop">
 
                         <label>
-                            Orbit strength (min)
+                            Orbit strength
                         </label>
 
                         <input
                             id="orbitStrength"
                             type="number"
-                            min="1"
-                            max="60"
+                            min="0.1"
+                            step="0.1"
                             value="5"
                         >
 
                     </div>
 
                     <div class="description">
-                        Larger values make the target orbit more slowly and
-                        with a wider loop. This only matters when Orbit target is on.
+                        How far and how fast the target orbits. Higher
+                        values make wider, faster orbits.
                     </div>
 
                 </div>
@@ -1129,7 +1130,6 @@
                             id="chaosMultiplier"
                             type="number"
                             min="1"
-                            max="10"
                             step="0.1"
                             value="1.5"
                         >
@@ -1137,8 +1137,9 @@
                     </div>
 
                     <div class="description">
-                        Multiplies jump intensity and makes the timer more
-                        prone to dramatic swings. 1 is normal, 2+ is silly.
+                        A universal "chaos" dial that affects speed
+                        calculations and random behaviors. 1 = normal,
+                        higher = more chaotic.
                     </div>
 
                 </div>
@@ -1152,25 +1153,16 @@
 
             <div class="buttons">
 
-                <button
-                    class="settingsButton"
-                    id="applySettings"
-                >
-                    Apply & Restart
+                <button id="restartButton" class="settingsButton">
+                    ⏻ Restart
                 </button>
 
-                <button
-                    class="settingsButton dangerButton"
-                    id="resetSettings"
-                >
-                    Reset Timer
+                <button id="closeSettings" class="settingsButton">
+                    Close
                 </button>
 
-                <button
-                    class="settingsButton"
-                    id="closeSettings"
-                >
-                    Close Settings
+                <button id="applySettings" class="settingsButton">
+                    Apply
                 </button>
 
             </div>
@@ -1248,28 +1240,23 @@
 
         function secondsToTime(totalSeconds) {
             totalSeconds = Math.max(0, Math.min(MAX_TIME, totalSeconds));
-            const mins = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
-            const secs = (totalSeconds % 60).toString().padStart(2, "0");
-            return `${mins}:${secs}`;
-        }
-
-        function getCurrentTime() {
-            const now = new Date();
-            return now.getHours() * 60 + now.getMinutes();
+            const minutes = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
         }
 
         function getSystemTimeFormatted() {
             const now = new Date();
-            const hours = now.getHours().toString().padStart(2, "0");
-            const minutes = now.getMinutes().toString().padStart(2, "0");
-            return `${hours}:${minutes}`;
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
         }
 
         function getEffectiveTarget() {
-            let target = 0;
+            let target;
 
             if (settings.targetMode === "clock") {
-                target = getCurrentTime();
+                target = timeToSeconds(getSystemTimeFormatted());
             } else {
                 target = timeToSeconds(settings.targetTime);
             }
@@ -1347,9 +1334,9 @@
             const distance = Math.abs(seconds - target);
 
             if (settings.slowAwayMode) {
-                if ((direction === 1 && seconds > target) || (direction === -1 && seconds < target)) {
+                if (direction === -1) {
                     tickDelay = settings.normalSpeed + settings.awayPenalty;
-                } else {
+                } else if (direction === 1) {
                     tickDelay = settings.normalSpeed;
                 }
                 if ((settings.chaosMultiplier || 1) > 1) {
@@ -1489,7 +1476,7 @@
             document.getElementById("chaosMultiplier").value = settings.chaosMultiplier;
         }
 
-        function applySettings() {
+        function loadSettings() {
             settings.useSystemTime = document.getElementById("useSystemTime").checked;
             settings.startTime = document.getElementById("startTime").value;
             settings.targetMode = document.getElementById("targetMode").value;
@@ -1517,70 +1504,64 @@
             settings.orbitTarget = document.getElementById("orbitTarget").checked;
             settings.orbitStrength = parseFloat(document.getElementById("orbitStrength").value);
             settings.chaosMultiplier = parseFloat(document.getElementById("chaosMultiplier").value);
-
-            settingsOverlay.style.display = "none";
-            restart();
-        }
-
-        function resetSettings() {
-            settingsOverlay.style.display = "none";
-            restart();
-        }
-
-        function closeSettings() {
-            settingsOverlay.style.display = "none";
-        }
-
-        function openSettings() {
-            settingsOverlay.style.display = "flex";
-            initSettings();
         }
 
         /* =========================
            EVENT LISTENERS
            ========================= */
 
-        let keyPressBuffer = "";
-
-        document.addEventListener("keypress", (event) => {
-            // Only listen for lowercase letters, ignore when focused on input
-            const target = event.target;
-            if (target.tagName === "INPUT" || target.tagName === "SELECT") {
-                return;
+        document.addEventListener("keydown", (e) => {
+            if (e.key === 'c' || e.key === 'C') {
+                if (settingsOverlay.style.display === "flex") {
+                    settingsOverlay.style.display = "none";
+                    running = true;
+                } else {
+                    settingsOverlay.style.display = "flex";
+                    running = false;
+                }
             }
 
-            keyPressBuffer += event.key.toLowerCase();
-
-            if (keyPressBuffer.endsWith("cat")) {
-                openSettings();
-                keyPressBuffer = "";
-            } else if (keyPressBuffer.endsWith("dog")) {
+            if (e.key === 'd' || e.key === 'D') {
                 toggleDebugMode();
-                keyPressBuffer = "";
-            } else if (keyPressBuffer.length > 3) {
-                // Keep only the last 3 characters to catch sequences mid-typing
-                keyPressBuffer = keyPressBuffer.slice(-3);
             }
         });
 
-        applySettingsButton.addEventListener("click", applySettings);
-        resetSettingsButton.addEventListener("click", resetSettings);
-        closeSettingsButton.addEventListener("click", closeSettings);
-
-        settingsOverlay.addEventListener("click", (event) => {
-            if (event.target === settingsOverlay) {
-                closeSettings();
+        settingsOverlay.addEventListener("click", (e) => {
+            if (e.target === settingsOverlay) {
+                settingsOverlay.style.display = "none";
+                running = true;
             }
+        });
+
+        applySettingsButton.addEventListener("click", () => {
+            loadSettings();
+            settingsOverlay.style.display = "none";
+            running = true;
+            restart();
+        });
+
+        closeSettingsButton.addEventListener("click", () => {
+            settingsOverlay.style.display = "none";
+            running = true;
+        });
+
+        document.getElementById("restartButton").addEventListener("click", () => {
+            restart();
+        });
+
+        useSystemTimeCheckbox.addEventListener("change", () => {
+            document.getElementById("startTime").disabled = useSystemTimeCheckbox.checked;
         });
 
         /* =========================
            INITIALIZATION
-           ===================================== */
+           ========================= */
 
-        settings.useSystemTime = true;
+        initSettings();
         restart();
 
     </script>
 
 </body>
+
 </html>
