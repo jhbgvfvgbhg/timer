@@ -19,9 +19,9 @@
             background:
                 radial-gradient(
                     ellipse 80% 70% at 50% 45%,
-                    #10131c 0%,
-                    #08090f 55%,
-                    #030408 100%
+                    #0a0d14 0%,
+                    #05060c 55%,
+                    #010102 100%
                 );
             background-attachment: fixed;
 
@@ -96,7 +96,7 @@
             max-height: 92vh;
             overflow-y: auto;
 
-            background: #131722;
+            background: #0e1119;
             border: 1px solid #ff3333;
             border-radius: 10px;
 
@@ -137,10 +137,10 @@
             margin-top: 20px;
             padding: 16px;
 
-            border: 1px solid #2a3145;
+            border: 1px solid #222839;
             border-radius: 6px;
 
-            background: #0c0f18;
+            background: #080a11;
         }
 
         .section h2 {
@@ -200,10 +200,10 @@
 
             padding: 8px;
 
-            background: #06080f;
+            background: #030409;
             color: #ff5555;
 
-            border: 1px solid #4a5570;
+            border: 1px solid #3b445c;
             border-radius: 4px;
 
             font-family: monospace;
@@ -255,7 +255,7 @@
         .settingsButton {
             padding: 12px;
 
-            background: #0c0f18;
+            background: #080a11;
             color: #ff3333;
 
             border: 1px solid #ff3333;
@@ -267,7 +267,7 @@
         }
 
         .settingsButton:hover {
-            background: #1c2130;
+            background: #151926;
         }
 
         .dangerButton {
@@ -1379,30 +1379,33 @@
             }
         }
 
+        // Recomputed every tick, not once per mode change. changeMode()
+        // picks a direction and caches a delay together, then tick() reuses
+        // that delay for the next 5-10 seconds -- but the timer keeps moving,
+        // so it can cross the target inside that window. Once it crosses,
+        // the cached direction points away from the new position while the
+        // cached delay still says "no penalty".
+        function applySlowAwayResistance() {
+            const gap = seconds - getTargetTime();
+            const movingAway = (gap > 0 && direction === 1) || (gap < 0 && direction === -1);
+
+            return movingAway
+                ? settings.normalSpeed + settings.awayPenalty
+                : settings.normalSpeed;
+        }
+
         function chooseSpeed() {
-            const target = getTargetTime();
-            const distance = Math.abs(seconds - target);
-
             if (settings.slowAwayMode) {
-                // Needs the *signed* gap. The outer `distance` is
-                // Math.abs(...), so the old `distance < 0` arm could never
-                // fire: a timer sitting below its target and moving up to
-                // close the gap was charged the away penalty, while real
-                // away movement ran at full speed.
-                const gap = seconds - target;
-                const movingAway = (gap > 0 && direction === 1) || (gap < 0 && direction === -1);
-
-                tickDelay = movingAway
-                    ? settings.normalSpeed + settings.awayPenalty
-                    : settings.normalSpeed;
-
-                if ((settings.chaosMultiplier || 1) > 1) {
-                    tickDelay = Math.max(50, tickDelay / (settings.chaosMultiplier || 1));
-                }
+                // The setting promises the timer is "always at normal
+                // speed" apart from the away penalty, so the chaos dial
+                // must not quietly scale it here. tick() re-applies this
+                // every movement, so it is resolved against a live gap.
+                tickDelay = applySlowAwayResistance();
                 return;
             }
 
             if (settings.distanceBasedSpeed) {
+                const distance = Math.abs(seconds - getTargetTime());
                 const maxDistance = 60 * 12;
                 const proximity = Math.max(0, 1 - (distance / maxDistance));
                 const speedRange = settings.normalSpeed - settings.fastSpeed;
@@ -1480,6 +1483,13 @@
 
             seconds += direction * movement;
             seconds = Math.max(0, Math.min(MAX_TIME, seconds));
+
+            // Re-derive the resistance against the position we just moved to,
+            // so crossing the target takes effect on the very next tick
+            // instead of whenever the mode happens to roll over.
+            if (settings.slowAwayMode) {
+                tickDelay = applySlowAwayResistance();
+            }
 
             displayTime();
 
