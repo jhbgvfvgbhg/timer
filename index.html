@@ -1493,24 +1493,23 @@
            EVENT LISTENERS
            ========================= */
 
-        document.addEventListener("keydown", (event) => {
-            if (event.key.toLowerCase() === "c") {
-                const keys = Array.from(document.querySelectorAll(":focus")).map(el => el.tagName);
-                if (!keys.length || keys[0] !== "INPUT") {
-                    openSettings();
-                }
-            }
-        });
-
         let keyPressBuffer = "";
 
         document.addEventListener("keypress", (event) => {
+            // Only listen for lowercase letters, ignore when focused on input
+            const target = event.target;
+            if (target.tagName === "INPUT" || target.tagName === "SELECT") {
+                return;
+            }
+
             keyPressBuffer += event.key.toLowerCase();
-            if (keyPressBuffer.includes("cat")) {
+
+            if (keyPressBuffer.endsWith("cat")) {
                 openSettings();
                 keyPressBuffer = "";
-            } else if (!["c", "a", "t"].includes(event.key.toLowerCase())) {
-                keyPressBuffer = "";
+            } else if (keyPressBuffer.length > 3) {
+                // Keep only the last 3 characters to catch "cat" mid-typing
+                keyPressBuffer = keyPressBuffer.slice(-3);
             }
         });
 
@@ -1526,7 +1525,7 @@
 
         /* =========================
            INITIALIZATION
-           ========================= */
+           ===================================== */
 
         settings.useSystemTime = true;
         restart();
