@@ -1146,9 +1146,11 @@
                     </div>
 
                     <div class="description">
-                        A universal "chaos" dial that affects speed
-                        calculations and random behaviors. 1 = normal,
-                        higher = more chaotic.
+                        A universal "chaos" dial. It widens the chance
+                        and size of jumps, and makes the timer's
+                        direction bias more erratic. 1 = normal,
+                        higher = more chaotic. Your speed settings are
+                        used exactly as entered.
                     </div>
 
                 </div>
@@ -1410,9 +1412,6 @@
                 const proximity = Math.max(0, 1 - (distance / maxDistance));
                 const speedRange = settings.normalSpeed - settings.fastSpeed;
                 tickDelay = settings.normalSpeed - (speedRange * proximity);
-                if ((settings.chaosMultiplier || 1) > 1) {
-                    tickDelay = Math.max(50, tickDelay / (settings.chaosMultiplier || 1));
-                }
                 return;
             }
 
@@ -1443,10 +1442,6 @@
                 }
 
                 tickDelay = picked;
-            }
-
-            if ((settings.chaosMultiplier || 1) > 1) {
-                tickDelay = Math.max(50, tickDelay / (settings.chaosMultiplier || 1));
             }
         }
 
