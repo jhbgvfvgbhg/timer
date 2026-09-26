@@ -16,7 +16,15 @@
             height: 100vh;
             overflow: hidden;
 
-            background: #111;
+            background:
+                radial-gradient(
+                    ellipse 80% 70% at 50% 45%,
+                    #10131c 0%,
+                    #08090f 55%,
+                    #030408 100%
+                );
+            background-attachment: fixed;
+
             color: #ff3333;
 
             font-family: monospace;
@@ -38,9 +46,10 @@
             color: #ff3333;
 
             text-shadow:
-                0 0 10px red,
-                0 0 20px red,
-                0 0 40px #880000;
+                0 0 8px #ff2a2a,
+                0 0 22px #ff1a1a,
+                0 0 48px #c00020,
+                0 0 90px #6a0028;
         }
 
         #debugInfo {
@@ -87,8 +96,7 @@
             max-height: 92vh;
             overflow-y: auto;
 
-            background: #151515;
-
+            background: #131722;
             border: 1px solid #ff3333;
             border-radius: 10px;
 
@@ -129,10 +137,10 @@
             margin-top: 20px;
             padding: 16px;
 
-            border: 1px solid #333;
+            border: 1px solid #2a3145;
             border-radius: 6px;
 
-            background: #101010;
+            background: #0c0f18;
         }
 
         .section h2 {
@@ -192,10 +200,10 @@
 
             padding: 8px;
 
-            background: #080808;
+            background: #06080f;
             color: #ff5555;
 
-            border: 1px solid #555;
+            border: 1px solid #4a5570;
             border-radius: 4px;
 
             font-family: monospace;
@@ -247,7 +255,7 @@
         .settingsButton {
             padding: 12px;
 
-            background: #111;
+            background: #0c0f18;
             color: #ff3333;
 
             border: 1px solid #ff3333;
@@ -259,7 +267,7 @@
         }
 
         .settingsButton:hover {
-            background: #211;
+            background: #1c2130;
         }
 
         .dangerButton {
@@ -370,7 +378,7 @@
                             id="startTime"
                             type="text"
                             value="18:00"
-                            placeholder="HH:MM"
+                            placeholder="MM:SS"
                         >
 
                     </div>
@@ -506,6 +514,7 @@
                         Controls how often the timer ignores the
                         target and moves in the opposite direction.
                         Higher values make its behavior more chaotic.
+                        <span id="chanceSumHint">These two always total 100%.</span>
                     </div>
 
                 </div>
@@ -1178,7 +1187,6 @@
         const settingsOverlay = document.getElementById("settingsOverlay");
         const debugInfo = document.getElementById("debugInfo");
         const applySettingsButton = document.getElementById("applySettings");
-        const resetSettingsButton = document.getElementById("resetSettings");
         const closeSettingsButton = document.getElementById("closeSettings");
         const useSystemTimeCheckbox = document.getElementById("useSystemTime");
 
@@ -1225,6 +1233,41 @@
         let modeTimeout;
         let running = true;
         let debugMode = false;
+        let keyPressBuffer = "";
+
+        /* =========================
+           CHANCE HELPERS
+           ========================= */
+
+        // Every chance field is a 0-100 percentage. Empty or garbage
+        // input parses to NaN, so coerce before it reaches a comparison.
+        function clampChance(value) {
+            if (value === null || value === undefined || value === "") return 0;
+            const n = Number(value);
+            if (Number.isNaN(n)) return 0;
+            if (n === Infinity) return 100;
+            if (n === -Infinity) return 0;
+            return Math.max(0, Math.min(100, n));
+        }
+
+        // towardChance and awayChance are two views of one number.
+        // Editing either writes through to the other so the pair can never
+        // disagree, and awayChance is the one the timer reads.
+        function syncChanceFields(sourceId) {
+            const towardEl = document.getElementById("towardChance");
+            const awayEl = document.getElementById("awayChance");
+            const value = clampChance(document.getElementById(sourceId).value);
+
+            // Honour whichever field the user actually touched: typing 25
+            // into "away" must mean 25% away, not 25% toward.
+            if (sourceId === "awayChance") {
+                awayEl.value = value;
+                towardEl.value = 100 - value;
+            } else {
+                towardEl.value = value;
+                awayEl.value = 100 - value;
+            }
+        }
 
         /* =========================
            TIME FUNCTIONS
@@ -1318,14 +1361,21 @@
             const chaosBias = (settings.chaosMultiplier || 1) - 1;
             const randomBias = Math.random() < Math.min(0.5, chaosBias * 0.25);
 
+            // awayChance is the real knob: toward = 100 - awayChance.
+            // The chaos bias can only add to "toward", and both ends are
+            // clamped, so the roll stays in [0,1] at any multiplier.
+            const away = clampChance(settings.awayChance) / 100;
+            const toward = Math.min(1, (1 - away) + (randomBias ? 0.1 : 0));
+
             if (distance > 0) {
-                const towardChance = settings.towardChance / 100;
-                direction = Math.random() < towardChance + (randomBias ? 0.1 : 0) ? -1 : 1;
+                // Above target: moving toward means going down.
+                direction = Math.random() < toward ? -1 : 1;
             } else if (distance < 0) {
-                const towardChance = settings.towardChance / 100;
-                direction = Math.random() < towardChance + (randomBias ? 0.1 : 0) ? 1 : -1;
+                // Below target: moving toward means going up.
+                direction = Math.random() < toward ? 1 : -1;
             } else {
-                direction = Math.random() < 0.5 ? 1 : -1;
+                // Sitting on the target: pick a side using the same odds.
+                direction = Math.random() < toward ? 1 : -1;
             }
         }
 
@@ -1334,16 +1384,13 @@
             const distance = Math.abs(seconds - target);
 
 if (settings.slowAwayMode) {
-    const target = getTargetTime();
-    const distance = seconds - target;
-    
     // If direction matches trying to close the gap, we're moving toward
     const movingToward = (distance > 0 && direction === -1) || (distance < 0 && direction === 1);
-    
-    tickDelay = movingToward 
-        ? settings.normalSpeed 
+
+    tickDelay = movingToward
+        ? settings.normalSpeed
         : settings.normalSpeed + settings.awayPenalty;
-    
+
     if ((settings.chaosMultiplier || 1) > 1) {
         tickDelay = Math.max(50, tickDelay / (settings.chaosMultiplier || 1));
     }
@@ -1361,28 +1408,34 @@ if (settings.slowAwayMode) {
                 return;
             }
 
-            const rand = Math.random() * 100;
-            let cumulative = 0;
+            // Weighted pick. The four chances do not have to total 100:
+            // normalise by their own sum so slowChance=0 really is 0
+            // instead of silently absorbing whatever is left over.
+            const weights = [
+                [clampChance(settings.normalChance), settings.normalSpeed],
+                [clampChance(settings.fastChance), settings.fastSpeed],
+                [clampChance(settings.veryFastChance), settings.veryFastSpeed],
+                [clampChance(settings.slowChance), settings.slowSpeed]
+            ];
 
-            cumulative += settings.normalChance;
-            if (rand < cumulative) {
+            const total = weights.reduce((sum, w) => sum + w[0], 0);
+
+            if (total <= 0) {
                 tickDelay = settings.normalSpeed;
-                return;
-            }
+            } else {
+                let roll = Math.random() * total;
+                let picked = settings.normalSpeed;
 
-            cumulative += settings.fastChance;
-            if (rand < cumulative) {
-                tickDelay = settings.fastSpeed;
-                return;
-            }
+                for (const [weight, speed] of weights) {
+                    if (roll < weight) {
+                        picked = speed;
+                        break;
+                    }
+                    roll -= weight;
+                }
 
-            cumulative += settings.veryFastChance;
-            if (rand < cumulative) {
-                tickDelay = settings.veryFastSpeed;
-                return;
+                tickDelay = picked;
             }
-
-            tickDelay = settings.slowSpeed;
 
             if ((settings.chaosMultiplier || 1) > 1) {
                 tickDelay = Math.max(50, tickDelay / (settings.chaosMultiplier || 1));
@@ -1399,11 +1452,20 @@ if (settings.slowAwayMode) {
                 chooseSpeed();
             }
 
-            const jumpRoll = Math.random() * 100;
             let movement = 1;
 
-            if (jumpRoll < settings.jumpChance * (settings.chaosMultiplier || 1)) {
-                movement = Math.floor(Math.random() * (settings.maxJump - settings.minJump + 1)) + settings.minJump;
+            // Clamp the scaled threshold: at 100% jumpChance and a 1.5x
+            // multiplier the old code compared against 150 against a 0-100
+            // roll, which made jumps guaranteed. Chaos still widens the
+            // jump size below, it just can't max out the chance.
+            const jumpThreshold = clampChance(
+                clampChance(settings.jumpChance) * (settings.chaosMultiplier || 1)
+            );
+
+            if (Math.random() * 100 < jumpThreshold) {
+                const minJump = Math.max(1, settings.minJump);
+                const maxJump = Math.max(minJump, settings.maxJump);
+                movement = Math.floor(Math.random() * (maxJump - minJump + 1)) + minJump;
                 movement *= Math.max(1, Math.round(settings.chaosMultiplier || 1));
             }
 
@@ -1457,7 +1519,8 @@ if (settings.slowAwayMode) {
             document.getElementById("targetMode").value = settings.targetMode;
             document.getElementById("targetTime").value = settings.targetTime;
             document.getElementById("towardChance").value = settings.towardChance;
-            document.getElementById("awayChance").value = settings.awayChance;
+            document.getElementById("awayChance").value = 100 - settings.towardChance;
+            syncChanceFields("towardChance");
             document.getElementById("normalSpeed").value = settings.normalSpeed;
             document.getElementById("fastSpeed").value = settings.fastSpeed;
             document.getElementById("veryFastSpeed").value = settings.veryFastSpeed;
@@ -1486,8 +1549,11 @@ if (settings.slowAwayMode) {
             settings.startTime = document.getElementById("startTime").value;
             settings.targetMode = document.getElementById("targetMode").value;
             settings.targetTime = document.getElementById("targetTime").value;
-            settings.towardChance = parseFloat(document.getElementById("towardChance").value);
-            settings.awayChance = parseFloat(document.getElementById("awayChance").value);
+            // awayChance wins if the pair ever disagrees, since that is
+            // the value chooseBehavior() actually reads.
+            const awayChance = clampChance(document.getElementById("awayChance").value);
+            settings.awayChance = awayChance;
+            settings.towardChance = 100 - awayChance;
             settings.normalSpeed = parseFloat(document.getElementById("normalSpeed").value);
             settings.fastSpeed = parseFloat(document.getElementById("fastSpeed").value);
             settings.veryFastSpeed = parseFloat(document.getElementById("veryFastSpeed").value);
@@ -1515,40 +1581,74 @@ if (settings.slowAwayMode) {
            EVENT LISTENERS
            ========================= */
 
-        document.addEventListener("keydown", (e) => {
-            if (e.key === 'c' || e.key === 'C') {
-                if (settingsOverlay.style.display === "flex") {
-                    settingsOverlay.style.display = "none";
-                    running = true;
-                } else {
-                    settingsOverlay.style.display = "flex";
-                    running = false;
-                }
-            }
+        function openSettings() {
+            settingsOverlay.style.display = "flex";
+            running = false;
+        }
 
-            if (e.key === 'd' || e.key === 'D') {
+        function closeSettings() {
+            settingsOverlay.style.display = "none";
+            running = true;
+        }
+
+        function isSettingsOpen() {
+            return settingsOverlay.style.display === "flex";
+        }
+
+        // Typing anywhere that accepts text must not feed the secret.
+        // Without this guard, editing "18:00" in a field and hitting a 'c'
+        // would pop the settings open mid-keystroke.
+        function isTypingTarget(target) {
+            if (!target) return false;
+            const tag = target.tagName;
+            return tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || target.isContentEditable;
+        }
+
+        // Watch for the literal words rather than a single keypress, so a
+        // stray "c" no longer opens the menu on its own.
+        document.addEventListener("keypress", (e) => {
+            if (isTypingTarget(e.target)) return;
+
+            if (e.key.length !== 1) return;
+
+            keyPressBuffer += e.key.toLowerCase();
+
+            if (keyPressBuffer.endsWith("cat")) {
+                keyPressBuffer = "";
+                if (isSettingsOpen()) {
+                    closeSettings();
+                } else {
+                    openSettings();
+                }
+            } else if (keyPressBuffer.endsWith("dog")) {
+                keyPressBuffer = "";
                 toggleDebugMode();
+            } else if (keyPressBuffer.length > 3) {
+                // Keep only the tail so "cat" still matches mid-typing.
+                keyPressBuffer = keyPressBuffer.slice(-3);
+            }
+        });
+
+        // Escape is the conventional way out of a modal.
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && isSettingsOpen()) {
+                closeSettings();
             }
         });
 
         settingsOverlay.addEventListener("click", (e) => {
             if (e.target === settingsOverlay) {
-                settingsOverlay.style.display = "none";
-                running = true;
+                closeSettings();
             }
         });
 
         applySettingsButton.addEventListener("click", () => {
             loadSettings();
-            settingsOverlay.style.display = "none";
-            running = true;
+            closeSettings();
             restart();
         });
 
-        closeSettingsButton.addEventListener("click", () => {
-            settingsOverlay.style.display = "none";
-            running = true;
-        });
+        closeSettingsButton.addEventListener("click", closeSettings);
 
         document.getElementById("restartButton").addEventListener("click", () => {
             restart();
@@ -1556,6 +1656,14 @@ if (settings.slowAwayMode) {
 
         useSystemTimeCheckbox.addEventListener("change", () => {
             document.getElementById("startTime").disabled = useSystemTimeCheckbox.checked;
+        });
+
+        // Editing either direction field rewrites the other, so the two
+        // can never drift apart into a pair that sums to something else.
+        ["towardChance", "awayChance"].forEach((id) => {
+            document.getElementById(id).addEventListener("input", () => {
+                syncChanceFields(id);
+            });
         });
 
         /* =========================
