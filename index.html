@@ -1333,17 +1333,25 @@
             const target = getTargetTime();
             const distance = Math.abs(seconds - target);
 
-            if (settings.slowAwayMode) {
-                if (direction === -1) {
-                    tickDelay = settings.normalSpeed + settings.awayPenalty;
-                } else if (direction === 1) {
-                    tickDelay = settings.normalSpeed;
-                }
-                if ((settings.chaosMultiplier || 1) > 1) {
-                    tickDelay = Math.max(50, tickDelay / (settings.chaosMultiplier || 1));
-                }
-                return;
-            }
+if (settings.slowAwayMode) {
+    const currentDistance = Math.abs(seconds - target);
+    const nextSeconds = seconds + direction;
+    const nextDistance = Math.abs(nextSeconds - target);
+    const movingAway = nextDistance > currentDistance;
+
+    tickDelay = movingAway
+        ? settings.normalSpeed + settings.awayPenalty
+        : settings.normalSpeed;
+
+    if ((settings.chaosMultiplier || 1) > 1) {
+        tickDelay = Math.max(
+            50,
+            tickDelay / (settings.chaosMultiplier || 1)
+        );
+    }
+
+    return;
+}
 
             if (settings.distanceBasedSpeed) {
                 const maxDistance = 60 * 12;
