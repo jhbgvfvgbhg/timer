@@ -1334,22 +1334,19 @@
             const distance = Math.abs(seconds - target);
 
 if (settings.slowAwayMode) {
-    const currentDistance = Math.abs(seconds - target);
-    const nextSeconds = seconds + direction;
-    const nextDistance = Math.abs(nextSeconds - target);
-    const movingAway = nextDistance > currentDistance;
-
-    tickDelay = movingAway
-        ? settings.normalSpeed + settings.awayPenalty
-        : settings.normalSpeed;
-
+    const target = getTargetTime();
+    const distance = seconds - target;
+    
+    // If direction matches trying to close the gap, we're moving toward
+    const movingToward = (distance > 0 && direction === -1) || (distance < 0 && direction === 1);
+    
+    tickDelay = movingToward 
+        ? settings.normalSpeed 
+        : settings.normalSpeed + settings.awayPenalty;
+    
     if ((settings.chaosMultiplier || 1) > 1) {
-        tickDelay = Math.max(
-            50,
-            tickDelay / (settings.chaosMultiplier || 1)
-        );
+        tickDelay = Math.max(50, tickDelay / (settings.chaosMultiplier || 1));
     }
-
     return;
 }
 
